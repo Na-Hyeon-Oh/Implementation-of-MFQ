@@ -20,6 +20,18 @@ Implementation of MFQ scheduling policy with 4 Ready Queue.
 - Q1 : RR Scheduling Policy (tq = 2)
 - Q2 : RR Scheduling Policy (tq = 4)
 - Q3 : FCFS Scheduling Policy
+<br>
+▶️
+
+  ▪️ priority : Q0 > Q1 > Q2 > Q3
+  
+  ▪️ Scheduling sequence is from high priorty to low priority
+  
+  ▪️ If time quantum is consumed by process, Qi -> Qi+1
+  
+  ▪️ If process finishes IO burst and wakeup, Qi -> Qi-1
+  
+  ▪️ re-entering, Q3 -> Q3
 
 
 <br>
@@ -65,21 +77,28 @@ make
 
 ### Algorithm
 
-⚫ stack[]에 process 추적 과정을 저장
-
-⚫ input file로부터 numProcess, numRsrcType, numRsrcUnit[], allocationMatrix[][], requestMatrix[][] 값들을 모두 받아옴
-
-⚫ available[]에 할당이 가능한 unit 개수 저장
+|MFQ|Queues|CPU|
+|---|------|---|
+|{ time, Queue[] }|{ scheduling, timeQuantum, front/rearNode, index }|{ Process }|
+||- Q0 <br>- Q1 <br>- Q2 <br>- Q3|{ pid, Arrival/Terminal Time, Turnaround Time, Waiting Time, locationQueue, # of cycles, cpu/IO Burst Time… }|
 
 <br>
+⚫ input file로 부터 필요한 변수들 입력받고 Process, Queue 변수에 기본 값 세팅
 
-⚫ available[j]의 값과 Rij의 값을 반복해서 비교하여 만약 available[j]>=Rij라면 stack으로 해당 Pi (pid=i)를 push해준다.
-그렇지 않다면 다음 process로 넘어가 available과 비교하는 과정을 반복한다.
+⚫ sleep 상태의 process들에 대해 따로 I/O Burst와 관련한 queue를 사용하지 아니하고 기존 ready queue들에 process의 varrivalT 변수를 이용하여 미리 넣어주었기 때문에, stateflag를 두어 그 값이 0인지 아닌지에 따라 탐색해야 할 Queue(currentQueue)를 0으로부터 시작할지 아니면 후에 I/O Burst와 관련하여 정해진 값으로
+update하지 않은 채 진행할지 결정
 
-⚫ 만약 stack의 크기가 N이 된다면, 이는 모든 process에 자원을 할당하는 순서가 존재한다는 뜻이므로 이는 NO-Deadlock state로 볼 수 있다.
+⚫ process가 Q0, Q1, Q2로부터 왔을 때, 각 Queue에 따른 timequantum에 따라 해당 process가 runout이 될지 timequantum 내에 cpu burst를 끝낼지가 결정됨.
 
-⚫ 만약 numProcess=N이고 현재 stack의 크기가 N-3인데 더 이상 할당할 수 있는 process가 없다면, 해당 system은 deadlock인 state에 있다고 볼 수 있다.
-이 때, deadlock 상태의 blocked process list는 stack의 크기가 최대일 때 stack에 포함되지 않은 process로 출력한다.
+후자의 경우(wakeup_ timequantum 내에 IO Burst가 끝나는 것)에는 해당 process가 완전히 종료될 수 있는지를 확인하여 endProcess 값을 update하고 이 endProcess의 값이 만약 (# of processes)와 같아진다면 해당
+scheduling이 종료
+
+⚫ process가 Q3로부터 왔을 때, 위의 Q0~3와는 다르게 각 Queue에 따른 timequantum이 존재하지 않음. 단지 arrivalTime만 중요.
+
+따라서 해당 process의 I/O Burst 혹은 process의 종료만 고려.
+
+
+
 
 
 ### Input Format <a name="inputF"></a>
